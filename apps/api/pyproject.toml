@@ -1,0 +1,30 @@
+[project]
+name = "trpg-evaluator-api"
+version = "0.1.0"
+description = "FastAPI backend for TRPG Evaluator MVP"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{name = "TRPG Evaluator Team"}]
+dependencies = [
+  "fastapi>=0.110.0,<1.0.0",
+  "uvicorn[standard]>=0.29.0,<1.0.0",
+  "pydantic>=2.6.0,<3.0.0",
+  "pydantic-settings>=2.2.1,<3.0.0",
+  "python-dotenv>=1.0.0,<2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0,<9.0.0",
+  "httpx>=0.27.0,<0.28.0"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "app"}
+
+[tool.setuptools.packages.find]
+where = ["app"]

@@ -1,0 +1,31 @@
+Metadata-Version: 2.4
+Name: trpg-evaluator-api
+Version: 0.1.0
+Summary: FastAPI backend for TRPG Evaluator MVP
+Author: TRPG Evaluator Team
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi<1.0.0,>=0.110.0
+Requires-Dist: uvicorn[standard]<1.0.0,>=0.29.0
+Requires-Dist: pydantic<3.0.0,>=2.6.0
+Requires-Dist: pydantic-settings<3.0.0,>=2.2.1
+Requires-Dist: python-dotenv<2.0.0,>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest<9.0.0,>=8.0.0; extra == "dev"
+Requires-Dist: httpx<0.28.0,>=0.27.0; extra == "dev"
+
+# TRPG Evaluator API
+
+FastAPI service providing backend capabilities for the TRPG Evaluator MVP. See `SPEC.md` for end-to-end requirements.
+
+## Local development
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## Testing
+
+```bash
+pytest
+```
