@@ -29,3 +29,11 @@ def get_feedback(session_id: str):
     if response is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return response
+
+
+@router.get("/{session_id}/insights")
+def get_insights(session_id: str):
+    insights = sessions.get_insights(session_id)
+    if insights is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return insights

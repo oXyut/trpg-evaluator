@@ -14,7 +14,7 @@ from app.schemas.session import (
     TurnsResponse,
 )
 from app.schemas.scenario import ScenarioChunk
-from app.services import scenarios as scenario_service
+from app.services import rag, scenarios as scenario_service
 
 
 @dataclass
@@ -97,8 +97,9 @@ class SessionGenerator:
         if chunk:
             excerpt = chunk.content.strip().split("\n")[0][:160]
             if actor == "Keeper":
-                return f"Keeper引用: 『{excerpt}』 を提示し、探索を促す。"
-            return f"{actor}はチャンク『{excerpt}』を踏まえた行動を宣言する。"
+                hint = self._rag_hint(chunk)
+                return f"Keeper引用: 『{excerpt}』 → 提示ヒント: {hint}"
+            return f"{actor}は引用チャンク『{excerpt}』を踏まえた行動を宣言する。"
 
         if actor == "Keeper":
             return f"Keeper describes eerie development at turn {turn_index}."
@@ -111,6 +112,15 @@ class SessionGenerator:
         if turn_index % 2 == 0:
             return [f"scenario#paragraph_{turn_index % 3}"]
         return []
+
+    def _rag_hint(self, chunk: ScenarioChunk) -> str:
+        if not self.scenario:
+            return "シナリオ参照なし"
+        matches = rag.simple_retrieve(chunk.content.split("\n")[0], self.scenario, top_k=1)
+        if matches:
+            excerpt = matches[0].content.strip().split("\n")[0][:80]
+            return f"関連チャンク『{excerpt}』"
+        return "追加ヒントなし"
 
     def generate_feedback(self, session_id: str) -> SessionFeedback:
         context_snippet = "シナリオ参照なし"
@@ -144,6 +154,29 @@ def get_turns(session_id: str, cursor: Optional[int]) -> Optional[TurnsResponse]
 
 def get_feedback(session_id: str) -> Optional[SessionFeedback]:
     return repository.get_feedback(session_id)
+
+
+def get_insights(session_id: str) -> Optional[dict]:
+    record = repository._items.get(session_id)
+    if record is None:
+        return None
+
+    scenario = scenario_service.repository.get(record.response.scenario_id)
+    references: List[str] = []
+    for turn in record.turns:
+        references.extend(turn.references)
+
+    rag_samples = []
+    if scenario and references:
+        query = "\n".join(turn.content for turn in record.turns[:3])
+        rag_samples = [match.__dict__ for match in rag.simple_retrieve(query, scenario, top_k=3)]
+
+    return {
+        "session_id": session_id,
+        "scenario_id": record.response.scenario_id,
+        "references": references,
+        "rag_samples": rag_samples,
+    }
 
 
 repository = InMemorySessionRepository()

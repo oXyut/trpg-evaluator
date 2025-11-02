@@ -191,6 +191,12 @@ def test_personality_and_session_endpoints(client: TestClient) -> None:
         "tone"
     }
 
+    insights_response = client.get(f"/v1/sessions/{session_id}/insights")
+    assert insights_response.status_code == 200
+    insights = insights_response.json()
+    assert insights["scenario_id"] == scenario_id
+    assert insights["references"]
+
 
 def test_roll_endpoint(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     sequence = iter([6, 2])
