@@ -307,4 +307,123 @@ collections:
 
 * [ ] Firebase Auth（匿名→メール）
 * [ ] 構造化ログと追跡ID
-* *... content truncated due to length ...*
+* [ ] Staging→Prodプロモート
+* **Done条件**: 本番URLでMVP要件充足
+
+---
+
+# バックログ（優先順）
+
+1. キャラシ**インポート**（ココフォリア/ユドナリウム）
+2. 対抗判定/戦闘ラウンドの拡充
+3. SANの一時/不定の狂気イベント表
+4. 性格プリセットのGUI
+5. エクスポート（CSV/JSON, 企画書添付用）
+
+---
+
+# Codex CLI向け 実行テンプレ（安全化）
+
+## 変数（.tool-params/env.json）
+
+```json
+{
+  "project": "trpg-autoplay",
+  "region": "asia-northeast1",
+  "gcs_bucket": "trpg-app-data",
+  "services": {"web": "trpg-web", "api": "trpg-api"}
+}
+```
+
+## 生成順序（高危険操作なし）
+
+1. リポ雛形 → 2) API雛形 → 3) ダイス → 4) キャラ作成 → 5) 性格 → 6) RAG → 7) 実行/評価 → 8) デプロイ
+
+## コマンド例（擬似）
+
+```bash
+# 1) 雛形
+codex repo init --template monorepo
+
+# 2) API
+codex gen --path apps/api --preset fastapi-adk --routes /v1/characters,/v1/rolls,/v1/personalities,/v1/sessions
+
+# 3) DiceTool
+codex gen --path apps/api/tools/dice.py --spec .tool-params/dice_spec.yaml
+
+# 4) Character APIs
+codex gen --path apps/api/routes/characters.py --schema packages/schema/characters.json
+
+# 5) Web
+codex gen --path apps/web --preset next-upload-dashboard
+```
+
+---
+
+# 仕様の機械可読（抜粋; YAML）
+
+```yaml
+roll:
+  request:
+    expr: {type: string, pattern: "^\\dd\\d+$"}
+    bonus: {type: integer, minimum: -2, maximum: 2}
+    skill: {type: integer, minimum: 1, maximum: 99}
+  response:
+    result: {enum: [Success, Hard, Extreme, Fail]}
+    thresholds:
+      regular: int
+      hard: int
+      extreme: int
+
+personality:
+  vector:
+    risk_taking: {type: number, minimum: 0, maximum: 1}
+    cooperation: {type: number, minimum: 0, maximum: 1}
+    curiosity: {type: number, minimum: 0, maximum: 1}
+    violence_avoidance: {type: number, minimum: 0, maximum: 1}
+```
+
+---
+
+# テスト計画（要点）
+
+* **ユニット**: DiceTool（境界/ボーナス）、Derived計算、RAGダミー
+* **API契約**: OpenAPIとzodで相互検証
+* **E2E（MVP）**: 固定seed/固定RAGで10ターン→フィードバック一致
+* **負荷**: 1セッション並列×5でエラーなし
+
+---
+
+# 受け入れテスト手順（縮約）
+
+1. `POST /v1/characters`（random）→200
+2. `PUT /v1/personalities/{id}`→200
+3. アップロード→シナリオID取得
+4. `POST /v1/sessions`（max_turns=10）
+5. `/turns`でRAG引用が含まれる
+6. `/feedback`が6指標+総評を返す
+
+---
+
+# 付録：由来値計算（CoC7; 疑似）
+
+* HP = floor((CON+SIZ)/10)
+* MP = floor(POW/5)
+* SAN = POW*5
+* Build/DB = STR+SIZの閾値表により決定
+* Move = DEX/STR/SIZ比較で決定
+
+---
+
+# 付録：プロンプト方針（最小）
+
+* Keeper: 「技能+難易度→ロール→短い描写」
+* Player: 「一行アクション→根拠→（必要時）技能名」
+* Evaluator: JSON固定形式で返す
+
+---
+
+# 変更履歴
+
+* v0.1 初稿（MVP向け設計/計画）
+* v0.2 MVP雛形実装（FastAPI API / Next.jsダッシュボード / 共有スキーマ）
