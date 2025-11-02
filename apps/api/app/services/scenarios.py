@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import re
 import uuid
@@ -17,6 +16,7 @@ from app.schemas.scenario import (
     ScenarioQueryResult,
     ScenarioResponse,
 )
+from app.services.storage import JSONBackedCollection
 
 
 PARAGRAPH_SPLIT_PATTERN = re.compile(r"\n{2,}")
@@ -70,21 +70,19 @@ def chunk_content(content: str, *, chunk_size: int) -> List[str]:
 class FileScenarioRepository(InMemoryScenarioRepository):
     def __init__(self, path: Path) -> None:
         super().__init__()
-        self._path = path
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._load()
-
-    def _load(self) -> None:
-        if not self._path.exists():
-            return
-        data = json.loads(self._path.read_text())
-        for entry in data:
-            model = ScenarioModel.model_validate(entry)
+        self._collection = JSONBackedCollection[
+            ScenarioModel
+        ](
+            path,
+            serializer=lambda item: item.model_dump(),
+            deserializer=lambda data: ScenarioModel.model_validate(data),
+        )
+        for model in self._collection:
             self._items[model.id] = ScenarioRecord(model=model)
 
     def _persist(self) -> None:
-        payload = [record.model.model_dump() for record in self._items.values()]
-        self._path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+        snapshot = [record.model for record in self._items.values()]
+        self._collection.replace_items(snapshot)
 
     def save(self, model: ScenarioModel) -> ScenarioModel:
         result = super().save(model)
@@ -123,6 +121,16 @@ def create_scenario(payload: ScenarioCreateRequest) -> ScenarioResponse:
 def create_scenario_from_text(*, name: str, content: str, source_type: str = "upload", chunk_size: int = 800) -> ScenarioResponse:
     request = ScenarioCreateRequest(name=name, content=content, source_type=source_type, chunk_size=chunk_size)
     return create_scenario(request)
+
+
+def persist_raw_upload(filename: str, content: str) -> None:
+    directory = os.getenv("SCENARIO_UPLOAD_DIR")
+    if not directory:
+        return
+    path = Path(directory)
+    path.mkdir(parents=True, exist_ok=True)
+    safe_name = filename.replace("/", "_")
+    (path / safe_name).write_text(content, encoding="utf-8")
 
 
 def list_scenarios() -> List[ScenarioResponse]:

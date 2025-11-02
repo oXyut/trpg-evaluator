@@ -13,6 +13,7 @@ from app.schemas.session import (
     SessionTurn,
     TurnsResponse,
 )
+from app.schemas.scenario import ScenarioChunk
 from app.services import scenarios as scenario_service
 
 
@@ -73,7 +74,8 @@ class SessionGenerator:
         for index in range(self.max_turns):
             actor = actors[index % len(actors)]
             role = "Keeper" if actor == "Keeper" else "Player"
-            content = self._generate_content(actor, index)
+            chunk = self._select_chunk(index)
+            content = self._generate_content(actor, index, chunk)
             references = self._generate_references(index)
             turns.append(
                 SessionTurn(
@@ -86,29 +88,45 @@ class SessionGenerator:
             )
         return turns
 
-    def _generate_content(self, actor: str, turn_index: int) -> str:
+    def _select_chunk(self, turn_index: int) -> Optional[ScenarioChunk]:
+        if self.scenario and self.scenario.chunks:
+            return self.scenario.chunks[turn_index % len(self.scenario.chunks)]
+        return None
+
+    def _generate_content(self, actor: str, turn_index: int, chunk: Optional[ScenarioChunk]) -> str:
+        if chunk:
+            excerpt = chunk.content.strip().split("\n")[0][:160]
+            if actor == "Keeper":
+                return f"Keeper引用: 『{excerpt}』 を提示し、探索を促す。"
+            return f"{actor}はチャンク『{excerpt}』を踏まえた行動を宣言する。"
+
         if actor == "Keeper":
             return f"Keeper describes eerie development at turn {turn_index}."
         return f"{actor} declares an action informed by prior clues at turn {turn_index}."
 
     def _generate_references(self, turn_index: int) -> List[str]:
-        if self.scenario and self.scenario.chunks:
-            chunk = self.scenario.chunks[turn_index % len(self.scenario.chunks)]
+        chunk = self._select_chunk(turn_index)
+        if self.scenario and chunk:
             return [f"{self.scenario.id}#{chunk.id}"]
         if turn_index % 2 == 0:
             return [f"scenario#paragraph_{turn_index % 3}"]
         return []
 
     def generate_feedback(self, session_id: str) -> SessionFeedback:
+        context_snippet = "シナリオ参照なし"
+        if self.scenario and self.scenario.chunks:
+            referenced = min(self.max_turns, len(self.scenario.chunks))
+            context_snippet = f"参照チャンク数: {referenced}/{len(self.scenario.chunks)}"
+
         metrics = {
-            "pacing": self._metric("Steady escalation with brief lulls."),
-            "branching": self._metric("Multiple clues offered meaningful choices."),
-            "difficulty": self._metric("Skill checks landed around 60% success rate."),
-            "fairness": self._metric("Consequences telegraphed ahead of time."),
-            "cohesion": self._metric("Narrative remained consistent across turns."),
-            "tone": self._metric("Horror tone preserved with occasional levity."),
+            "pacing": self._metric("チャンク参照を交えたテンポで進行しました。"),
+            "branching": self._metric("プレイヤー行動はチャンク引用により分岐の余地を示しました。"),
+            "difficulty": self._metric("引用チャンクを基にしたロール難易度は妥当です。"),
+            "fairness": self._metric("Keeperは引用テキストで十分な伏線を提示しました。"),
+            "cohesion": self._metric("セッション内容はチャンク内容と整合しています。"),
+            "tone": self._metric("チャンク由来の描写でホラー調が維持されました。"),
         }
-        summary = "Session reached climax within allotted turns and delivered actionable notes."
+        summary = f"{context_snippet} / シナリオとの整合性は概ね良好です。"
         return SessionFeedback(session_id=session_id, summary=summary, metrics=metrics)
 
     def _metric(self, comment: str) -> FeedbackMetric:

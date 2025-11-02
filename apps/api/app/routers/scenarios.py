@@ -33,6 +33,7 @@ async def upload_scenario(file: UploadFile):
     if not content.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty")
 
+    scenarios.persist_raw_upload(filename, content)
     return scenarios.create_scenario_from_text(name=filename, content=content)
 
 
