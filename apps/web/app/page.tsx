@@ -3,6 +3,7 @@ import { CharacterBuilder } from "../components/CharacterBuilder";
 import { FeedbackPanel } from "../components/FeedbackPanel";
 import { PersonalitySliders } from "../components/PersonalitySliders";
 import { RunSessionPanel } from "../components/RunSessionPanel";
+import { ScenarioList } from "../components/ScenarioList";
 import { ScenarioUploader } from "../components/ScenarioUploader";
 
 export default function Page() {
@@ -10,6 +11,10 @@ export default function Page() {
     <div className="space-y-8">
       <Card title="Scenario Upload" description="Upload PDF/MD/TXT for ingestion into Vertex AI RAG">
         <ScenarioUploader />
+      </Card>
+
+      <Card title="Stored Scenarios" description="一覧とチャンク数を確認">
+        <ScenarioList />
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -13,14 +13,15 @@ from app.utils import dice
 
 @pytest.fixture(autouse=True)
 def reset_repositories() -> Iterator[None]:
-    characters.repository._items.clear()
+    characters.repository = characters.InMemoryCharacterRepository()
     personalities.repository._items.clear()
     sessions.repository._items.clear()
+    scenario_service.repository = scenario_service.InMemoryScenarioRepository()
     yield
-    characters.repository._items.clear()
+    characters.repository = characters.InMemoryCharacterRepository()
     personalities.repository._items.clear()
     sessions.repository._items.clear()
-    scenario_service.repository._items.clear()
+    scenario_service.repository = scenario_service.InMemoryScenarioRepository()
 
 
 @pytest.fixture()

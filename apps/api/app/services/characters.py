@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import random
 import uuid
+import json
+import os
+from pathlib import Path
 from typing import Dict, Optional
 
 from app.schemas.character import (
@@ -55,7 +58,45 @@ class InMemoryCharacterRepository:
         return updated
 
 
-repository = InMemoryCharacterRepository()
+class FileCharacterRepository(InMemoryCharacterRepository):
+    def __init__(self, path: Path) -> None:
+        super().__init__()
+        self._path = path
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._load()
+
+    def _load(self) -> None:
+        if not self._path.exists():
+            return
+        data = json.loads(self._path.read_text())
+        for entry in data:
+            model = CharacterModel.model_validate(entry)
+            self._items[model.id] = CharacterRecord(model=model)
+
+    def _persist(self) -> None:
+        payload = [record.model.model_dump() for record in self._items.values()]
+        self._path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+
+    def save(self, model: CharacterModel) -> CharacterModel:
+        result = super().save(model)
+        self._persist()
+        return result
+
+    def update(self, character_id: str, data: CharacterUpdateRequest) -> Optional[CharacterModel]:
+        updated = super().update(character_id, data)
+        if updated is not None:
+            self._persist()
+        return updated
+
+
+def _create_repository() -> InMemoryCharacterRepository:
+    path = os.getenv("CHARACTER_STORE_PATH")
+    if path:
+        return FileCharacterRepository(Path(path))
+    return InMemoryCharacterRepository()
+
+
+repository = _create_repository()
 
 
 def create_character(payload: CharacterCreateRequest) -> CharacterModel:

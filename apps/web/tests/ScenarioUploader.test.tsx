@@ -13,6 +13,8 @@ describe("ScenarioUploader", () => {
       json: async () => ({ id: "scn_test", chunks: [1, 2, 3] })
     } as Response;
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(mockResponse);
+    const eventListener = vi.fn();
+    window.addEventListener("scenario:uploaded", eventListener);
 
     render(<ScenarioUploader />);
 
@@ -38,5 +40,8 @@ describe("ScenarioUploader", () => {
       expect.objectContaining({ method: "POST" })
     );
     expect(mockFile.text).toHaveBeenCalled();
+    expect(eventListener).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener("scenario:uploaded", eventListener);
   });
 });

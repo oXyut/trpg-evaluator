@@ -67,6 +67,10 @@ export function ScenarioUploader() {
             setScenarioId(data.id);
             setChunkCount(Array.isArray(data.chunks) ? data.chunks.length : null);
             setStatus("アップロード完了");
+
+            window.dispatchEvent(
+              new CustomEvent("scenario:uploaded", { detail: { id: data.id } })
+            );
           } catch (error) {
             console.error("Scenario upload failed", error);
             setStatus("アップロード中にエラーが発生しました");
