@@ -46,15 +46,12 @@ export function ScenarioUploader() {
               return;
             }
 
-            const content = await file.text();
-            const response = await fetch("/v1/scenarios", {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/v1/scenarios/upload", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: file.name,
-                content,
-                source_type: "upload"
-              })
+              body: formData
             });
 
             if (!response.ok) {

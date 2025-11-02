@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, UploadFile, status
 
 from app.schemas.scenario import (
     ScenarioCreateRequest,
@@ -16,6 +16,24 @@ router = APIRouter(prefix="/v1/scenarios", tags=["scenarios"])
 @router.post("", response_model=ScenarioResponse, status_code=status.HTTP_201_CREATED)
 def create_scenario(request: ScenarioCreateRequest):
     return scenarios.create_scenario(request)
+
+
+@router.post("/upload", response_model=ScenarioResponse, status_code=status.HTTP_201_CREATED)
+async def upload_scenario(file: UploadFile):
+    filename = file.filename or "uploaded_scenario.txt"
+    if not filename.lower().endswith(('.md', '.txt')) and not file.content_type.startswith("text/"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only text/markdown uploads supported in MVP")
+
+    try:
+        payload = await file.read()
+        content = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to decode file as UTF-8 text") from exc
+
+    if not content.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty")
+
+    return scenarios.create_scenario_from_text(name=filename, content=content)
 
 
 @router.get("", response_model=list[ScenarioResponse])

@@ -120,6 +120,11 @@ def create_scenario(payload: ScenarioCreateRequest) -> ScenarioResponse:
     return ScenarioResponse.model_validate(model)
 
 
+def create_scenario_from_text(*, name: str, content: str, source_type: str = "upload", chunk_size: int = 800) -> ScenarioResponse:
+    request = ScenarioCreateRequest(name=name, content=content, source_type=source_type, chunk_size=chunk_size)
+    return create_scenario(request)
+
+
 def list_scenarios() -> List[ScenarioResponse]:
     return [ScenarioResponse.model_validate(item) for item in repository.list()]
 

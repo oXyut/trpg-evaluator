@@ -4,8 +4,8 @@ MVP implementation for the Call of Cthulhu scenario evaluator described in `SPEC
 
 ## Repository layout
 
-- `apps/api`: FastAPI service exposing `/v1/characters`, `/v1/personalities`, `/v1/sessions`, and `/v1/rolls`.
-- `apps/web`: Next.js 14 dashboard for uploading scenarios, adjusting personality vectors, creating characters, running sessions, and viewing feedback.
+- `apps/api`: FastAPI service exposing `/v1/characters`, `/v1/personalities`, `/v1/sessions`, `/v1/rolls`, `/v1/scenarios`。
+- `apps/web`: Next.js 14 dashboard for uploading scenarios, browsing stored content, adjusting personality vectors, creating characters, running sessions, and viewing feedback.
 - `packages/schema`: Shared JSON schema definitions (e.g. `characters.json`) for cross-language validation.
 - `packages/ui`: Placeholder for reusable UI components.
 - `infra/`: Deployment scaffolding (Cloud Run & GCP docs).
@@ -52,6 +52,7 @@ Runtime configuration lives in `.env`. See the file for defaults covering API ho
 
 - `apps/api`: `pytest`
 - `apps/web`: `npm run lint`
+- `apps/web`: `npm run test`
 
 ## Deployment notes
 

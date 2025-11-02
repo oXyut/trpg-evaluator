@@ -240,3 +240,14 @@ def test_scenario_upload_and_query(client: TestClient) -> None:
     matches = query_response.json()["matches"]
     assert matches
     assert any("地下室" in match["content"] for match in matches)
+
+
+def test_scenario_upload_endpoint(client: TestClient) -> None:
+    files = {
+        "file": ("note.txt", "探索者のメモ\n\n館の奥に不穏な気配がある".encode("utf-8"), "text/plain")
+    }
+    response = client.post("/v1/scenarios/upload", files=files)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "note.txt"
+    assert len(data["chunks"]) >= 1

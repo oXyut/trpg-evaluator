@@ -3,6 +3,7 @@ uvicorn[standard]<1.0.0,>=0.29.0
 pydantic<3.0.0,>=2.6.0
 pydantic-settings<3.0.0,>=2.2.1
 python-dotenv<2.0.0,>=1.0.0
+python-multipart<0.0.10,>=0.0.7
 
 [dev]
 pytest<9.0.0,>=8.0.0

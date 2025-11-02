@@ -4,6 +4,7 @@ import { FeedbackPanel } from "../components/FeedbackPanel";
 import { PersonalitySliders } from "../components/PersonalitySliders";
 import { RunSessionPanel } from "../components/RunSessionPanel";
 import { ScenarioList } from "../components/ScenarioList";
+import { ScenarioQueryPanel } from "../components/ScenarioQueryPanel";
 import { ScenarioUploader } from "../components/ScenarioUploader";
 
 export default function Page() {
@@ -15,6 +16,10 @@ export default function Page() {
 
       <Card title="Stored Scenarios" description="一覧とチャンク数を確認">
         <ScenarioList />
+      </Card>
+
+      <Card title="Scenario Query" description="シナリオのチャンクを簡易検索">
+        <ScenarioQueryPanel />
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

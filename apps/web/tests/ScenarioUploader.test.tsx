@@ -21,8 +21,7 @@ describe("ScenarioUploader", () => {
     const input = screen.getByLabelText(/Drop scenario/i) as HTMLInputElement;
     const mockFile = {
       name: "mystery.txt",
-      type: "text/plain",
-      text: vi.fn().mockResolvedValue("dummy content")
+      type: "text/plain"
     } as unknown as File;
 
     fireEvent.change(input, { target: { files: [mockFile] } });
@@ -36,10 +35,12 @@ describe("ScenarioUploader", () => {
     expect(screen.getByText(/scn_test/)).toBeInTheDocument();
     expect(screen.getByText(/チャンク数: 3/)).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalledWith(
-      "/v1/scenarios",
+      "/v1/scenarios/upload",
       expect.objectContaining({ method: "POST" })
     );
-    expect(mockFile.text).toHaveBeenCalled();
+
+    const body = fetchSpy.mock.calls[0]?.[1]?.body as FormData;
+    expect(body).toBeInstanceOf(FormData);
     expect(eventListener).toHaveBeenCalledTimes(1);
 
     window.removeEventListener("scenario:uploaded", eventListener);
