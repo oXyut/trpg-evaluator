@@ -14,7 +14,7 @@ from app.schemas.session import (
     TurnsResponse,
 )
 from app.schemas.scenario import ScenarioChunk
-from app.services import rag, scenarios as scenario_service
+from app.services import agents, rag, scenarios as scenario_service
 
 
 @dataclass
@@ -69,10 +69,27 @@ class SessionGenerator:
         self.scenario = scenario
 
     def generate_turns(self, party_ids: List[str]) -> List[SessionTurn]:
-        actors = ["Keeper"] + party_ids
+        actors_list = ["Keeper"] + party_ids
+        if self.scenario:
+            agent_turns = agents.orchestrate_session(
+                scenario=self.scenario,
+                actors=actors_list,
+                max_turns=self.max_turns,
+            )
+            return [
+                SessionTurn(
+                    turn_index=index,
+                    actor=agent_turn.actor,
+                    role="Keeper" if agent_turn.actor == "Keeper" else "Player",
+                    content=agent_turn.content,
+                    references=agent_turn.references,
+                )
+                for index, agent_turn in enumerate(agent_turns)
+            ]
+
         turns: List[SessionTurn] = []
         for index in range(self.max_turns):
-            actor = actors[index % len(actors)]
+            actor = actors_list[index % len(actors_list)]
             role = "Keeper" if actor == "Keeper" else "Player"
             chunk = self._select_chunk(index)
             content = self._generate_content(actor, index, chunk)
