@@ -153,8 +153,16 @@ def test_personality_and_session_endpoints(client: TestClient) -> None:
     get_response = client.get(f"/v1/personalities/{character_id}")
     assert get_response.status_code == 200
 
+    scenario_payload = {
+        "name": "Alpha",
+        "content": "地下室には禁断の儀式の痕跡が残る。\n\n屋根裏には古文書。",
+        "source_type": "md"
+    }
+    scenario_response = client.post("/v1/scenarios", json=scenario_payload)
+    scenario_id = scenario_response.json()["id"]
+
     session_request = {
-        "scenario_id": "scenario_alpha",
+        "scenario_id": scenario_id,
         "party_ids": [character_id],
         "seed": 99,
         "max_turns": 4
@@ -168,6 +176,8 @@ def test_personality_and_session_endpoints(client: TestClient) -> None:
     turns = turns_response.json()
     assert len(turns["items"]) == 4
     assert turns["items"][0]["role"] == "Keeper"
+    assert turns["items"][0]["references"]
+    assert scenario_id in turns["items"][0]["references"][0]
 
     feedback_response = client.get(f"/v1/sessions/{session_id}/feedback")
     assert feedback_response.status_code == 200

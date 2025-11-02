@@ -13,6 +13,7 @@ from app.schemas.session import (
     SessionTurn,
     TurnsResponse,
 )
+from app.services import scenarios as scenario_service
 
 
 @dataclass
@@ -36,7 +37,8 @@ class InMemorySessionRepository:
             status="completed",
             max_turns=payload.max_turns,
         )
-        generator = SessionGenerator(seed=payload.seed, max_turns=payload.max_turns)
+        scenario = scenario_service.repository.get(payload.scenario_id)
+        generator = SessionGenerator(seed=payload.seed, max_turns=payload.max_turns, scenario=scenario)
         turns = generator.generate_turns(party_ids=payload.party_ids)
         feedback = generator.generate_feedback(session_id)
         self._items[session_id] = SessionRecord(response=created, turns=turns, feedback=feedback)
@@ -60,9 +62,10 @@ class InMemorySessionRepository:
 
 
 class SessionGenerator:
-    def __init__(self, seed: Optional[int], max_turns: int) -> None:
+    def __init__(self, seed: Optional[int], max_turns: int, scenario: Optional[scenario_service.ScenarioModel]) -> None:
         self.random = random.Random(seed)
         self.max_turns = max_turns
+        self.scenario = scenario
 
     def generate_turns(self, party_ids: List[str]) -> List[SessionTurn]:
         actors = ["Keeper"] + party_ids
@@ -89,6 +92,9 @@ class SessionGenerator:
         return f"{actor} declares an action informed by prior clues at turn {turn_index}."
 
     def _generate_references(self, turn_index: int) -> List[str]:
+        if self.scenario and self.scenario.chunks:
+            chunk = self.scenario.chunks[turn_index % len(self.scenario.chunks)]
+            return [f"{self.scenario.id}#{chunk.id}"]
         if turn_index % 2 == 0:
             return [f"scenario#paragraph_{turn_index % 3}"]
         return []
