@@ -465,6 +465,13 @@ collections:
 - **フェーズD: 評価フィードバック収束** — EvaluatorがScene metaとログ引用からテンポ/手掛かり回収率/緊張感を分析し、Keeper/Designer向け改善ポイントを提示。異常検知時はシナリオ構造の欠落（孤立シーン）を指摘。
 - **フェーズE: ガードレール** — 禁止行動（ネタバレ、外部知識持ち込み）をプロンプト/ツール実装で制御し、セッション崩壊時のロールバックと再試行を自動化。
 
+## 着手ブランチ計画（2025-11-03）
+
+- `feature/scenario-structure-stub`
+  - 対象: `ScenarioStructure` スキーマの packages/schema への切り出し、`/v1/scenarios/{id}/structure` 系 API の FastAPI スタブ実装（POST/GET/PATCH/validate のリクエスト/レスポンス型定義とルーティングのみ）。
+  - 非対象: Firestore保存ロジック、解析パイプライン本体、UI 実装、RAG 連携、テスト自動化。
+  - 完了条件: スタブエンドポイントが 200/202/400 系レスポンスを返す最小実装が追加され、OpenAPI 上で ScenarioStructure 型が参照できる状態。
+
 # バックログ（優先順）
 
 1. キャラシ**インポート**（ココフォリア/ユドナリウム）
