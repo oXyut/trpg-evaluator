@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.utils.logging import (
@@ -20,6 +22,22 @@ from app.routers import characters, evaluation, personalities, rolls, scenarios,
 configure_logging()
 
 app = FastAPI(title="TRPG Evaluator API", version="0.1.0")
+
+allowed_origins_env = os.getenv("CORS_ALLOW_ORIGINS")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    allowed_origins = ["*"] if os.getenv("CORS_ALLOW_ALL", "0").lower() in {"1", "true", "yes"} else []
+
+if allowed_origins:
+    log_event("cors.configuration", origins=allowed_origins)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(characters.router)
 app.include_router(personalities.router)
