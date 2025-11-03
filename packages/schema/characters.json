@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schema/characters.json",
+  "title": "Character",
+  "type": "object",
+  "required": ["pc_name", "stats", "skills"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^pc_[a-z0-9]{6,}$"},
+    "pc_name": {"type": "string", "minLength": 1},
+    "meta": {
+      "type": "object",
+      "properties": {
+        "era": {"type": "string"},
+        "profession": {"type": "string"}
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["STR", "CON", "SIZ", "DEX", "APP", "INT", "POW", "EDU"],
+      "properties": {
+        "STR": {"type": "integer", "minimum": 5, "maximum": 99},
+        "CON": {"type": "integer"},
+        "SIZ": {"type": "integer"},
+        "DEX": {"type": "integer"},
+        "APP": {"type": "integer"},
+        "INT": {"type": "integer"},
+        "POW": {"type": "integer"},
+        "EDU": {"type": "integer"}
+      }
+    },
+    "derived": {
+      "type": "object",
+      "properties": {
+        "HP": {"type": "integer"},
+        "MP": {"type": "integer"},
+        "SAN": {"type": "integer"},
+        "Luck": {"type": "integer"},
+        "Build": {"type": "integer"},
+        "DB": {"type": "string"},
+        "Move": {"type": "integer"}
+      }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 99
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

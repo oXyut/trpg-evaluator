@@ -1,0 +1,6 @@
+pyproject.toml
+trpg_evaluator_api.egg-info/PKG-INFO
+trpg_evaluator_api.egg-info/SOURCES.txt
+trpg_evaluator_api.egg-info/dependency_links.txt
+trpg_evaluator_api.egg-info/requires.txt
+trpg_evaluator_api.egg-info/top_level.txt
