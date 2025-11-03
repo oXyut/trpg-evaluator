@@ -90,11 +90,11 @@ A shared Cloud Build pipeline (`infra/gcp/cloudbuild.yaml`) builds both Docker i
 ```bash
 # Staging
 gcloud builds submit --config infra/gcp/cloudbuild.yaml \
-  --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg,_ARTIFACT_REPO=trpg-evaluator
+  --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>
 
 # Production
 gcloud builds submit --config infra/gcp/cloudbuild.yaml \
-  --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web,_ARTIFACT_REPO=trpg-evaluator
+  --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>
 ```
 
 Set up Cloud Build triggers so that merges to `main` deploy to staging by default. After staging validation, rerun the build with `_ENV=prod` (manual approval or dedicated trigger) to promote the same images to production.
