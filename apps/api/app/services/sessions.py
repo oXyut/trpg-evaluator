@@ -15,6 +15,7 @@ from app.schemas.session import (
 )
 from app.schemas.scenario import ScenarioChunk
 from app.services import agents, rag, scenarios as scenario_service
+from app.utils.logging import log_event
 
 
 @dataclass
@@ -40,9 +41,24 @@ class InMemorySessionRepository:
         )
         scenario = scenario_service.repository.get(payload.scenario_id)
         generator = SessionGenerator(seed=payload.seed, max_turns=payload.max_turns, scenario=scenario)
+        log_event(
+            "session.generate.start",
+            session_id=session_id,
+            scenario_id=payload.scenario_id,
+            party_ids=payload.party_ids,
+            seed=payload.seed,
+            max_turns=payload.max_turns,
+        )
         turns = generator.generate_turns(party_ids=payload.party_ids)
         feedback = generator.generate_feedback(session_id)
         self._items[session_id] = SessionRecord(response=created, turns=turns, feedback=feedback)
+        log_event(
+            "session.generate.complete",
+            session_id=session_id,
+            scenario_id=payload.scenario_id,
+            turn_count=len(turns),
+            has_feedback=feedback is not None,
+        )
         return created
 
     def get_turns(self, session_id: str, cursor: Optional[int], limit: int = 5) -> Optional[TurnsResponse]:
@@ -76,6 +92,14 @@ class SessionGenerator:
                 actors=actors_list,
                 max_turns=self.max_turns,
             )
+            log_event(
+                "session.turns.generated",
+                mode="orchestrated",
+                scenario_id=self.scenario.id,
+                actor_count=len(actors_list),
+                max_turns=self.max_turns,
+                generated=len(agent_turns),
+            )
             return [
                 SessionTurn(
                     turn_index=index,
@@ -103,6 +127,14 @@ class SessionGenerator:
                     references=references,
                 )
             )
+        log_event(
+            "session.turns.generated",
+            mode="synthetic",
+            scenario_id=self.scenario.id if self.scenario else None,
+            actor_count=len(actors_list),
+            max_turns=self.max_turns,
+            generated=len(turns),
+        )
         return turns
 
     def _select_chunk(self, turn_index: int) -> Optional[ScenarioChunk]:
@@ -154,6 +186,12 @@ class SessionGenerator:
             "tone": self._metric("チャンク由来の描写でホラー調が維持されました。"),
         }
         summary = f"{context_snippet} / シナリオとの整合性は概ね良好です。"
+        log_event(
+            "session.feedback.generated",
+            session_id=session_id,
+            scenario_id=self.scenario.id if self.scenario else None,
+            context=context_snippet,
+        )
         return SessionFeedback(session_id=session_id, summary=summary, metrics=metrics)
 
     def _metric(self, comment: str) -> FeedbackMetric:

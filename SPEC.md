@@ -224,7 +224,7 @@ collections:
 
 # デプロイ要件
 
-* **Docker**: `apps/api/Dockerfile`, `apps/web/Dockerfile`
+* **Docker**: `infra/docker/api.Dockerfile`, `infra/docker/web.Dockerfile`
 * **Cloud Run**: `--cpu=1 --memory=1Gi --min-instances=0`（MVP）
 * **CI**: Cloud Build; mainへmergeで`staging`に自動デプロイ
 
@@ -258,47 +258,47 @@ collections:
 
 **ゴール**: リポ/モノレポ、CI、ラン環境、雛形。
 
-* [ ] repo初期化（apps/web, apps/api, packages/schema）
-* [ ] Dockerfile ×2 作成
-* [ ] FastAPI 雛形 `/healthz`
-* [ ] Next.js 雛形 `/upload`
-* [ ] 共通Schema置き場と型共有
+* [x] repo初期化（apps/web, apps/api, packages/schema）
+* [x] Dockerfile ×2 作成
+* [x] FastAPI 雛形 `/healthz`
+* [x] Next.js 雛形 `/upload`
+* [x] 共通Schema置き場と型共有
 * **Done条件**: `docker compose up`でFE/BEが起動
 
 ## スプリント1（2–3日）— キャラシ & ダイス
 
 **ゴール**: キャラ作成/参照APIとd100実装。
 
-* [ ] `POST /v1/characters`（random, point_buy stub）
-* [ ] 由来値計算（HP/MP/SAN/Build/DB/Move）
-* [ ] `GET /characters/{id}/snapshot`
-* [ ] `POST /v1/rolls`（bonus/penalty、成功段階）
+* [x] `POST /v1/characters`（random, point_buy stub）
+* [x] 由来値計算（HP/MP/SAN/Build/DB/Move）
+* [x] `GET /characters/{id}/snapshot`
+* [x] `POST /v1/rolls`（bonus/penalty、成功段階）
 * **Done条件**: FEから作成→参照→ロールが通る
 
 ## スプリント2（2–3日）— 性格設定 & PL/KP
 
 **ゴール**: PersonalityTool + Player/Keeper最小会話。
 
-* [ ] `PUT/GET /v1/personalities/{id}`
-* [ ] Playerエージェントがguidanceを内部参照
-* [ ] Keeperがロール→描写の骨組み
+* [x] `PUT/GET /v1/personalities/{id}`
+* [x] Playerエージェントがguidanceを内部参照
+* [x] Keeperがロール→描写の骨組み
 * **Done条件**: 人工シーンで5ターン回る
 
 ## スプリント3（3–4日）— RAG & シナリオ実行
 
 **ゴール**: アップロード→段落化→RAG→自走。
 
-* [ ] アップロード→GCS保存→インデクシング
-* [ ] `RagTool.retrieve()` 実装
-* [ ] OrchestratorでRAG引用をログ化
+* [x] アップロード→GCS保存→インデクシング
+* [x] `RagTool.retrieve()` 実装
+* [x] OrchestratorでRAG引用をログ化
 * **Done条件**: 短いMDシナリオで10ターン完走
 
 ## スプリント4（2–3日）— フィードバック
 
 **ゴール**: Evaluatorで6指標+総評。
 
-* [ ] ログ→評価JSON→`/feedback`
-* [ ] FEダッシュボード表示
+* [x] ログ→評価JSON→`/feedback`
+* [x] FEダッシュボード表示
 * **Done条件**: 3つのシナリオで評価生成
 
 ## スプリント5（2–3日）— 仕上げ
@@ -306,7 +306,7 @@ collections:
 **ゴール**: 認証/監視/リリース。
 
 * [ ] Firebase Auth（匿名→メール）
-* [ ] 構造化ログと追跡ID
+* [x] 構造化ログと追跡ID
 * [ ] Staging→Prodプロモート
 * **Done条件**: 本番URLでMVP要件充足
 
@@ -429,3 +429,5 @@ personality:
 * v0.2 MVP雛形実装（FastAPI API / Next.jsダッシュボード / 共有スキーマ）
 * v0.3 シナリオAPI強化（アップロード/一覧/簡易検索）とフロント連携、基本テスト整備
 * v0.4 シナリオチャンク参照を用いたセッション生成・簡易RAGスタブ・Insights API を追加
+* v0.5 Dockerコンテナ整備とチェックリスト更新
+* v0.6 構造化ログ基盤とリクエストID連携を追加

@@ -54,6 +54,20 @@ Runtime configuration lives in `.env`. See the file for defaults covering API ho
 - Frontend lint: `npm run lint`
 - Frontend tests: `npm run test`
 
+## Docker
+
+```bash
+# Backend (FastAPI)
+docker build -f infra/docker/api.Dockerfile -t trpg-evaluator-api .
+docker run --env-file .env -p 8080:8080 trpg-evaluator-api
+
+# Frontend (Next.js)
+docker build -f infra/docker/web.Dockerfile -t trpg-evaluator-web .
+docker run -p 3000:3000 trpg-evaluator-web
+```
+
+When running both containers together, serve them behind the same origin (e.g. via `docker compose` or a reverse proxy) so that the web app can reach `/v1/*` routes exposed by the API container.
+
 ## Deployment notes
 
 The MVP targets Cloud Run for both services (see `SPEC.md` for release plan). Update `.tool-params/env.json` and `infra/` manifests before promoting to staging/production.
