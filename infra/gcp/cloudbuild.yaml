@@ -1,0 +1,107 @@
+# Cloud Build pipeline for building and deploying the TRPG Evaluator services.
+#
+# Trigger this build with the following substitutions:
+#   _ENV: staging|prod (controls tagging and deployment metadata)
+#   _API_SERVICE: Cloud Run service name for the API (e.g. trpg-api-stg)
+#   _WEB_SERVICE: Cloud Run service name for the Web app (e.g. trpg-web-stg)
+#   _REGION: Cloud Run region (default asia-northeast1)
+#   _ARTIFACT_REPO: Artifact Registry repository to push images to
+#
+# Example (staging):
+# gcloud builds submit --config infra/gcp/cloudbuild.yaml \
+#   --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg
+#
+# Example (production):
+# gcloud builds submit --config infra/gcp/cloudbuild.yaml \
+#   --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web
+
+timeout: 1200s
+substitutions:
+  _ENV: staging
+  _REGION: asia-northeast1
+  _ARTIFACT_REPO: trpg-evaluator
+  _API_SERVICE: trpg-api-stg
+  _WEB_SERVICE: trpg-web-stg
+
+steps:
+  - id: "Build API image"
+    name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "build",
+        "-f",
+        "infra/docker/api.Dockerfile",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/api:${_ENV}-${SHORT_SHA}",
+        ".",
+      ]
+
+  - id: "Build Web image"
+    name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "build",
+        "-f",
+        "infra/docker/web.Dockerfile",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/web:${_ENV}-${SHORT_SHA}",
+        ".",
+      ]
+
+  - id: "Push API image"
+    name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/api:${_ENV}-${SHORT_SHA}",
+      ]
+
+  - id: "Push Web image"
+    name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/web:${_ENV}-${SHORT_SHA}",
+      ]
+
+  - id: "Deploy API to Cloud Run"
+    name: gcr.io/cloud-builders/gcloud
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "${_API_SERVICE}",
+        "--image",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/api:${_ENV}-${SHORT_SHA}",
+        "--region",
+        "${_REGION}",
+        "--platform",
+        "managed",
+        "--allow-unauthenticated",
+        "--set-env-vars",
+        "API_ENV=${_ENV}",
+      ]
+
+  - id: "Deploy Web to Cloud Run"
+    name: gcr.io/cloud-builders/gcloud
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "${_WEB_SERVICE}",
+        "--image",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/web:${_ENV}-${SHORT_SHA}",
+        "--region",
+        "${_REGION}",
+        "--platform",
+        "managed",
+        "--allow-unauthenticated",
+        "--set-env-vars",
+        "NEXT_PUBLIC_API_BASE=https://${_API_SERVICE}-${_REGION}-a.run.app",
+      ]
+
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/api:${_ENV}-${SHORT_SHA}"
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/web:${_ENV}-${SHORT_SHA}"

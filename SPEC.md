@@ -308,7 +308,7 @@ collections:
 
 * [ ] Firebase Auth（匿名→メール）
 * [x] 構造化ログと追跡ID
-* [ ] Staging→Prodプロモート
+* [x] Staging→Prodプロモート
 * **Done条件**: 本番URLでMVP要件充足
 
 ---
@@ -432,3 +432,4 @@ personality:
 * v0.4 シナリオチャンク参照を用いたセッション生成・簡易RAGスタブ・Insights API を追加
 * v0.5 Dockerコンテナ整備とチェックリスト更新
 * v0.6 構造化ログ基盤とリクエストID連携を追加
+* v0.7 Cloud Build パイプラインで Staging→Prod プロモート手順を定義

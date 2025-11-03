@@ -77,3 +77,19 @@ When running both containers together, serve them behind the same origin (e.g. v
 ## Deployment notes
 
 The MVP targets Cloud Run for both services (see `SPEC.md` for release plan). Update `.tool-params/env.json` and `infra/` manifests before promoting to staging/production.
+
+### Cloud Build promotion (staging → production)
+
+A shared Cloud Build pipeline (`infra/gcp/cloudbuild.yaml`) builds both Docker images and deploys them to Cloud Run. Run it with environment-specific substitutions:
+
+```bash
+# Staging
+gcloud builds submit --config infra/gcp/cloudbuild.yaml \
+  --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg,_ARTIFACT_REPO=trpg-evaluator
+
+# Production
+gcloud builds submit --config infra/gcp/cloudbuild.yaml \
+  --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web,_ARTIFACT_REPO=trpg-evaluator
+```
+
+Set up Cloud Build triggers so that merges to `main` deploy to staging by default. After staging validation, rerun the build with `_ENV=prod` (manual approval or dedicated trigger) to promote the same images to production.
