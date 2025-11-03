@@ -43,7 +43,7 @@ export function PersonalitySliders() {
         </div>
       ))}
       <p className="text-xs text-slate-500">
-        Adjust sliders to tune AI player behavior. Values sync with `/v1/personalities/{{character_id}}` payloads.
+        Adjust sliders to tune AI player behavior. Values sync with <code>/v1/personalities/&lt;character_id&gt;</code> payloads.
       </p>
     </div>
   );
