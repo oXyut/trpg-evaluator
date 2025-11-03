@@ -3,6 +3,7 @@
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "./AuthProvider";
+import { apiFetch } from "../lib/apiClient";
 
 type ScenarioSummary = {
   id: string;
@@ -37,11 +38,7 @@ export function RunSessionPanel() {
       return;
     }
       try {
-        const response = await fetch("/v1/scenarios", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await apiFetch("/v1/scenarios", undefined, token);
         if (!response.ok) {
           throw new Error(`request failed: ${response.status}`);
         }
@@ -83,14 +80,13 @@ export function RunSessionPanel() {
     setFeedback(null);
 
     try {
-      const characterResponse = await fetch("/v1/characters", {
+      const characterResponse = await apiFetch("/v1/characters", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ method: "random" })
-      });
+      }, token);
       if (!characterResponse.ok) {
         throw new Error("character creation failed");
       }
@@ -103,32 +99,23 @@ export function RunSessionPanel() {
         max_turns: maxTurns
       };
 
-      const sessionResponse = await fetch("/v1/sessions", {
+      const sessionResponse = await apiFetch("/v1/sessions", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(sessionPayload)
-      });
+      }, token);
       if (!sessionResponse.ok) {
         throw new Error("session creation failed");
       }
       const session = await sessionResponse.json();
 
-      const turnsResponse = await fetch(`/v1/sessions/${session.id}/turns`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const turnsResponse = await apiFetch(`/v1/sessions/${session.id}/turns`, undefined, token);
       const turnsData = await turnsResponse.json();
       setLogs(turnsData.items ?? []);
 
-      const feedbackResponse = await fetch(`/v1/sessions/${session.id}/feedback`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const feedbackResponse = await apiFetch(`/v1/sessions/${session.id}/feedback`, undefined, token);
       if (feedbackResponse.ok) {
         setFeedback(await feedbackResponse.json());
       }

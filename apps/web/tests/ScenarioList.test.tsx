@@ -29,6 +29,7 @@ describe("ScenarioList", () => {
     expect(screen.getByText("scn_1")).toBeInTheDocument();
     expect(screen.getByText("scn_2")).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios");
   });
 
   test("reloads when scenario uploaded event fires", async () => {
@@ -58,15 +59,21 @@ describe("ScenarioList", () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios");
+    expect(fetchSpy.mock.calls[1]?.[0]?.toString()).toContain("/v1/scenarios");
   });
 
   test("shows error when fetch fails", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: false, status: 500 } as Response);
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue({ ok: false, status: 500 } as Response);
 
     renderWithAuth(<ScenarioList />);
 
     await waitFor(() => {
       expect(screen.getByText(/取得に失敗/)).toBeInTheDocument();
     });
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios");
   });
 });

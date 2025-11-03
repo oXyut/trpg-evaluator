@@ -35,10 +35,9 @@ describe("ScenarioUploader", () => {
 
     expect(screen.getByText(/scn_test/)).toBeInTheDocument();
     expect(screen.getByText(/チャンク数: 3/)).toBeInTheDocument();
-    expect(fetchSpy).toHaveBeenCalledWith(
-      "/v1/scenarios/upload",
-      expect.objectContaining({ method: "POST" })
-    );
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios/upload");
+    expect(fetchSpy.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ method: "POST" }));
 
     const body = fetchSpy.mock.calls[0]?.[1]?.body as FormData;
     expect(body).toBeInstanceOf(FormData);

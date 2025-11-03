@@ -58,5 +58,11 @@ describe("RunSessionPanel", () => {
 
     expect(screen.getByText(/参照チャンク数/)).toBeInTheDocument();
     expect(fetchSpy).toHaveBeenCalledTimes(5);
+    const urls = fetchSpy.mock.calls.map((call) => call[0]?.toString());
+    expect(urls[0]).toContain("/v1/scenarios");
+    expect(urls[1]).toContain("/v1/characters");
+    expect(urls[2]).toContain("/v1/sessions");
+    expect(urls[3]).toContain("/v1/sessions/");
+    expect(urls[4]).toContain("/v1/sessions/");
   });
 });

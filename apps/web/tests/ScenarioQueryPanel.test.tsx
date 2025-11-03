@@ -40,10 +40,13 @@ describe("ScenarioQueryPanel", () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios");
+    expect(fetchSpy.mock.calls[1]?.[0]?.toString()).toContain("/v1/scenarios");
   });
 
   test("handles query failure", async () => {
-    vi.spyOn(globalThis, "fetch")
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
         json: async () => [{ id: "scn_a", name: "Mystery" }]
@@ -62,5 +65,8 @@ describe("ScenarioQueryPanel", () => {
     await waitFor(() => {
       expect(screen.getByText(/検索に失敗/)).toBeInTheDocument();
     });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0]?.[0]?.toString()).toContain("/v1/scenarios");
+    expect(fetchSpy.mock.calls[1]?.[0]?.toString()).toContain("/v1/scenarios");
   });
 });

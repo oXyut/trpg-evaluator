@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useAuth } from "./AuthProvider";
+import { apiFetch } from "../lib/apiClient";
 
 export function ScenarioUploader() {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -36,13 +37,10 @@ export function ScenarioUploader() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/v1/scenarios/upload", {
+      const response = await apiFetch("/v1/scenarios/upload", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
         body: formData
-      });
+      }, token);
 
       if (!response.ok) {
         const message = await response.text();

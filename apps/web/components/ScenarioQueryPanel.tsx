@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "./AuthProvider";
+import { apiFetch } from "../lib/apiClient";
 
 type ScenarioSummary = {
   id: string;
@@ -34,11 +35,7 @@ export function ScenarioQueryPanel() {
     }
       setLoadState("loading");
       try {
-        const response = await fetch("/v1/scenarios", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await apiFetch("/v1/scenarios", undefined, token);
         if (!response.ok) {
           throw new Error(`request failed: ${response.status}`);
         }
@@ -74,14 +71,13 @@ export function ScenarioQueryPanel() {
     setMatches([]);
 
     try {
-      const response = await fetch(`/v1/scenarios/${scenarioId}/query`, {
+      const response = await apiFetch(`/v1/scenarios/${scenarioId}/query`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ query, top_k: 3 })
-      });
+      }, token);
 
       if (!response.ok) {
         throw new Error(`request failed: ${response.status}`);

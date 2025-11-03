@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "./AuthProvider";
+import { apiFetch } from "../lib/apiClient";
 
 type ScenarioSummary = {
   id: string;
@@ -23,11 +24,7 @@ export function ScenarioList() {
     }
     setState("loading");
     try {
-      const response = await fetch("/v1/scenarios", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await apiFetch("/v1/scenarios", undefined, token);
       if (!response.ok) {
         throw new Error(`request failed: ${response.status}`);
       }
