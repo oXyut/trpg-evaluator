@@ -172,6 +172,7 @@ Cloud Build の実行結果から、Cloud Run サービス URL を確認して�
 3. ステージング URL 経由で手動 QA → 問題なければ本番へ昇格。
 4. 本番デプロイ後はキャッシュが残っている場合があるので、必要に応じて CDN やブラウザのキャッシュクリアを案内。
 5. Firebase Console の Authentication →「ログイン方法」で Google プロバイダを「有効」に設定し、Cloud Run のドメインを承認済みドメインへ追加する。次に「プロジェクトの設定」→「アプリを追加」で Web アプリを登録し、取得した `firebaseConfig` を `.env` / Cloud Run の環境変数へ反映する。
+6. Cloud Run 側で `auth.token.verified` ログが出ているか確認し、Bearer トークンが正しく伝播していることを確認。
 
 ---
 
