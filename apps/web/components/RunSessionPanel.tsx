@@ -1,6 +1,8 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+
+import { useAuth } from "./AuthProvider";
 
 type ScenarioSummary = {
   id: string;
@@ -28,11 +30,18 @@ export function RunSessionPanel() {
   const [logs, setLogs] = useState<TurnLog[]>([]);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { token, user, loading } = useAuth();
 
-  useEffect(() => {
-    const loadScenarios = async () => {
+  const loadScenarios = useCallback(async () => {
+    if (!token) {
+      return;
+    }
       try {
-        const response = await fetch("/v1/scenarios");
+        const response = await fetch("/v1/scenarios", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
           throw new Error(`request failed: ${response.status}`);
         }
@@ -45,12 +54,25 @@ export function RunSessionPanel() {
         console.error("Failed to load scenarios", err);
         setError("シナリオ一覧の取得に失敗しました");
       }
-    };
+  }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      if (!loading && !user) {
+        setScenarios([]);
+        setScenarioId("");
+        setError(null);
+      }
+      return;
+    }
     loadScenarios();
-  }, []);
+  }, [token, loadScenarios, loading, user]);
 
   const handleRun = async () => {
+    if (!token) {
+      setError("セッションを実行するにはログインしてください");
+      return;
+    }
     if (!scenarioId) {
       setError("シナリオを選択してください");
       return;
@@ -63,7 +85,10 @@ export function RunSessionPanel() {
     try {
       const characterResponse = await fetch("/v1/characters", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ method: "random" })
       });
       if (!characterResponse.ok) {
@@ -80,7 +105,10 @@ export function RunSessionPanel() {
 
       const sessionResponse = await fetch("/v1/sessions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(sessionPayload)
       });
       if (!sessionResponse.ok) {
@@ -88,11 +116,19 @@ export function RunSessionPanel() {
       }
       const session = await sessionResponse.json();
 
-      const turnsResponse = await fetch(`/v1/sessions/${session.id}/turns`);
+      const turnsResponse = await fetch(`/v1/sessions/${session.id}/turns`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const turnsData = await turnsResponse.json();
       setLogs(turnsData.items ?? []);
 
-      const feedbackResponse = await fetch(`/v1/sessions/${session.id}/feedback`);
+      const feedbackResponse = await fetch(`/v1/sessions/${session.id}/feedback`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (feedbackResponse.ok) {
         setFeedback(await feedbackResponse.json());
       }
@@ -117,7 +153,7 @@ export function RunSessionPanel() {
             className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
             value={scenarioId}
             onChange={(event) => setScenarioId(event.target.value)}
-            disabled={isRunning || scenarios.length === 0}
+            disabled={isRunning || scenarios.length === 0 || !token}
           >
             {scenarios.map((item) => (
               <option key={item.id} value={item.id}>
@@ -140,13 +176,19 @@ export function RunSessionPanel() {
         <button
           type="button"
           className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:opacity-60"
-          disabled={isRunning || !scenarioId}
+          disabled={isRunning || !scenarioId || !token}
           onClick={handleRun}
         >
           {isRunning ? "Running..." : "Run Session"}
         </button>
         <span className="text-xs text-slate-500">POST `/v1/sessions` → `/turns` → `/feedback`</span>
       </div>
+
+      {(!loading && !user) ? (
+        <div className="rounded border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-300">
+          まず Google でサインインしてください。
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded border border-red-500/40 bg-red-900/20 px-3 py-2 text-xs text-red-200">

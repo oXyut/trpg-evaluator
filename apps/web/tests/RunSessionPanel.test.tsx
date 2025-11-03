@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import { RunSessionPanel } from "../components/RunSessionPanel";
+import { renderWithAuth } from "./testUtils";
 
 describe("RunSessionPanel", () => {
   afterEach(() => {
@@ -46,7 +47,7 @@ describe("RunSessionPanel", () => {
         })
       } as Response);
 
-    render(<RunSessionPanel />);
+    renderWithAuth(<RunSessionPanel />);
 
     const button = await screen.findByRole("button", { name: /Run Session/i });
     fireEvent.click(button);

@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import { ScenarioQueryPanel } from "../components/ScenarioQueryPanel";
+import { renderWithAuth } from "./testUtils";
 
 describe("ScenarioQueryPanel", () => {
   afterEach(() => {
@@ -25,7 +26,7 @@ describe("ScenarioQueryPanel", () => {
         })
       } as Response);
 
-    render(<ScenarioQueryPanel />);
+    renderWithAuth(<ScenarioQueryPanel />);
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("Mystery")).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe("ScenarioQueryPanel", () => {
       } as Response)
       .mockResolvedValueOnce({ ok: false, status: 500 } as Response);
 
-    render(<ScenarioQueryPanel />);
+    renderWithAuth(<ScenarioQueryPanel />);
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("Mystery")).toBeInTheDocument();

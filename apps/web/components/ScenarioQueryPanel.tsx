@@ -1,6 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+import { useAuth } from "./AuthProvider";
 
 type ScenarioSummary = {
   id: string;
@@ -24,12 +26,19 @@ export function ScenarioQueryPanel() {
   const [query, setQuery] = useState<string>("");
   const [matches, setMatches] = useState<QueryMatch[]>([]);
   const [queryState, setQueryState] = useState<QueryState>("idle");
+  const { token, user, loading } = useAuth();
 
-  useEffect(() => {
-    const fetchScenarios = async () => {
+  const fetchScenarios = useCallback(async () => {
+    if (!token) {
+      return;
+    }
       setLoadState("loading");
       try {
-        const response = await fetch("/v1/scenarios");
+        const response = await fetch("/v1/scenarios", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
           throw new Error(`request failed: ${response.status}`);
         }
@@ -43,14 +52,22 @@ export function ScenarioQueryPanel() {
         console.error("Failed to load scenario list", error);
         setLoadState("error");
       }
-    };
+  }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      if (!loading && !user) {
+        setScenarios([]);
+        setLoadState("idle");
+      }
+      return;
+    }
     fetchScenarios();
-  }, []);
+  }, [token, fetchScenarios, user, loading]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!scenarioId || !query.trim()) {
+    if (!scenarioId || !query.trim() || !token) {
       return;
     }
     setQueryState("searching");
@@ -59,7 +76,10 @@ export function ScenarioQueryPanel() {
     try {
       const response = await fetch(`/v1/scenarios/${scenarioId}/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({ query, top_k: 3 })
       });
 
@@ -75,6 +95,14 @@ export function ScenarioQueryPanel() {
       setQueryState("error");
     }
   };
+
+  if (!loading && !user) {
+    return (
+      <div className="rounded-md border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs text-slate-400">
+        シナリオ検索を利用するにはログインしてください
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -117,7 +145,7 @@ export function ScenarioQueryPanel() {
         <button
           type="submit"
           className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:opacity-60"
-          disabled={queryState === "searching" || !scenarioId || !query.trim()}
+          disabled={queryState === "searching" || !scenarioId || !query.trim() || !token}
         >
           {queryState === "searching" ? "検索中..." : "チャンクを検索"}
         </button>

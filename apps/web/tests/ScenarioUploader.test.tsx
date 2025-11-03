@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import { ScenarioUploader } from "../components/ScenarioUploader";
+import { renderWithAuth } from "./testUtils";
 
 describe("ScenarioUploader", () => {
   afterEach(() => {
@@ -16,7 +17,7 @@ describe("ScenarioUploader", () => {
     const eventListener = vi.fn();
     window.addEventListener("scenario:uploaded", eventListener);
 
-    render(<ScenarioUploader />);
+    renderWithAuth(<ScenarioUploader />);
 
     const input = screen.getByLabelText(/Drop scenario/i) as HTMLInputElement;
     const mockFile = {

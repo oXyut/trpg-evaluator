@@ -1,7 +1,8 @@
 import { act } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 
 import { ScenarioList } from "../components/ScenarioList";
+import { renderWithAuth } from "./testUtils";
 
 describe("ScenarioList", () => {
   afterEach(() => {
@@ -19,7 +20,7 @@ describe("ScenarioList", () => {
       } as Response
     );
 
-    render(<ScenarioList />);
+    renderWithAuth(<ScenarioList />);
 
     await waitFor(() => {
       expect(screen.getByText("Moonlight")).toBeInTheDocument();
@@ -42,7 +43,7 @@ describe("ScenarioList", () => {
         json: async () => [{ id: "scn_3", name: "Harbor", chunks: [] }]
       } as Response);
 
-    render(<ScenarioList />);
+    renderWithAuth(<ScenarioList />);
 
     await waitFor(() => {
       expect(screen.getByText(/まだアップロード/)).toBeInTheDocument();
@@ -62,7 +63,7 @@ describe("ScenarioList", () => {
   test("shows error when fetch fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: false, status: 500 } as Response);
 
-    render(<ScenarioList />);
+    renderWithAuth(<ScenarioList />);
 
     await waitFor(() => {
       expect(screen.getByText(/取得に失敗/)).toBeInTheDocument();

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { useAuth } from "./AuthProvider";
 
 type ScenarioSummary = {
   id: string;
@@ -13,11 +15,19 @@ type LoadState = "idle" | "loading" | "error";
 export function ScenarioList() {
   const [items, setItems] = useState<ScenarioSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { token, user, loading } = useAuth();
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    if (!token) {
+      return;
+    }
     setState("loading");
     try {
-      const response = await fetch("/v1/scenarios");
+      const response = await fetch("/v1/scenarios", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error(`request failed: ${response.status}`);
       }
@@ -28,16 +38,31 @@ export function ScenarioList() {
       console.error("Failed to load scenarios", error);
       setState("error");
     }
-  };
+  }, [token]);
 
   useEffect(() => {
+    if (!token) {
+      if (!loading && !user) {
+        setItems([]);
+        setState("idle");
+      }
+      return;
+    }
     load();
     const handler = () => load();
     window.addEventListener("scenario:uploaded", handler);
     return () => {
       window.removeEventListener("scenario:uploaded", handler);
     };
-  }, []);
+  }, [token, load, loading, user]);
+
+  if (!loading && !user) {
+    return (
+      <div className="rounded-md border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs text-slate-400">
+        一覧を閲覧するにはログインしてください
+      </div>
+    );
+  }
 
   if (state === "loading" && items.length === 0) {
     return (

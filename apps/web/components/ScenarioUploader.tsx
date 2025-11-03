@@ -2,11 +2,80 @@
 
 import { useState } from "react";
 
+import { useAuth } from "./AuthProvider";
+
 export function ScenarioUploader() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [scenarioId, setScenarioId] = useState<string | null>(null);
   const [chunkCount, setChunkCount] = useState<number | null>(null);
+  const { token, user, loading, signInWithGoogle } = useAuth();
+
+  const handleFileSelect = async (file: File) => {
+    setFileName(file.name);
+    setStatus("アップロード準備中...");
+    setScenarioId(null);
+    setChunkCount(null);
+
+    try {
+      const isTextLike =
+        file.type.startsWith("text/") ||
+        file.name.toLowerCase().endsWith(".md") ||
+        file.name.toLowerCase().endsWith(".txt");
+
+      if (!isTextLike) {
+        setStatus("MVPではテキスト/Markdownのみ対応しています");
+        return;
+      }
+
+      if (!token) {
+        setStatus("アップロードにはログインが必要です");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/v1/scenarios/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        setStatus(`アップロード失敗: ${message || response.status}`);
+        return;
+      }
+
+      const data: { id: string; chunks?: unknown[] } = await response.json();
+      setScenarioId(data.id);
+      setChunkCount(Array.isArray(data.chunks) ? data.chunks.length : null);
+      setStatus("アップロード完了");
+
+      window.dispatchEvent(new CustomEvent("scenario:uploaded", { detail: { id: data.id } }));
+    } catch (error) {
+      console.error("Scenario upload failed", error);
+      setStatus("アップロード中にエラーが発生しました");
+    }
+  };
+
+  if (!loading && !user) {
+    return (
+      <div className="space-y-3 rounded-md border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+        <p>シナリオをアップロードするには Google でサインインしてください。</p>
+        <button
+          type="button"
+          onClick={() => void signInWithGoogle()}
+          className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400"
+        >
+          サインイン
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -29,49 +98,7 @@ export function ScenarioUploader() {
           if (!file) {
             return;
           }
-
-          setFileName(file.name);
-          setStatus("アップロード準備中...");
-          setScenarioId(null);
-          setChunkCount(null);
-
-          try {
-            const isTextLike =
-              file.type.startsWith("text/") ||
-              file.name.toLowerCase().endsWith(".md") ||
-              file.name.toLowerCase().endsWith(".txt");
-
-            if (!isTextLike) {
-              setStatus("MVPではテキスト/Markdownのみ対応しています");
-              return;
-            }
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const response = await fetch("/v1/scenarios/upload", {
-              method: "POST",
-              body: formData
-            });
-
-            if (!response.ok) {
-              const message = await response.text();
-              setStatus(`アップロード失敗: ${message || response.status}`);
-              return;
-            }
-
-            const data: { id: string; chunks?: unknown[] } = await response.json();
-            setScenarioId(data.id);
-            setChunkCount(Array.isArray(data.chunks) ? data.chunks.length : null);
-            setStatus("アップロード完了");
-
-            window.dispatchEvent(
-              new CustomEvent("scenario:uploaded", { detail: { id: data.id } })
-            );
-          } catch (error) {
-            console.error("Scenario upload failed", error);
-            setStatus("アップロード中にエラーが発生しました");
-          }
+          void handleFileSelect(file);
         }}
       />
       {fileName ? (

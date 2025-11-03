@@ -53,6 +53,11 @@ Runtime configuration lives in `.env`. See the file for defaults covering API ho
   - `FIREBASE_PROJECT_ID=<your-project-id>`
   - `FIREBASE_CREDENTIALS_PATH=<path-to-service-account.json>`（もしくは Application Default Credentials を使用）
   - 開発・テスト用途では `FIREBASE_AUTH_DISABLED=1` として認証をバイパス可能です。
+  - フロントエンド側では Firebase Web SDK 用に以下の公開環境変数を設定します:
+    - `NEXT_PUBLIC_FIREBASE_API_KEY`
+    - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+    - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+    - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
 ## Testing
 

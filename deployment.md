@@ -116,6 +116,11 @@ gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
   - `FIREBASE_PROJECT_ID=<Firebase プロジェクトID>`
   - `FIREBASE_CREDENTIALS_PATH=/secrets/firebase/credentials.json`
 - 併せて Secret をマウントするよう、Cloud Build デプロイ時の引数を調整する（必要であれば `cloudbuild.yaml` の `gcloud run deploy` へ `--set-secrets` を追加）。
+- Web アプリでは Firebase Web SDK を通じてトークンを取得するため、以下の公開環境変数を設定する（Cloud Run の Web サービス側に `--set-env-vars` で渡す）。
+  - `NEXT_PUBLIC_FIREBASE_API_KEY`
+  - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+  - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+  - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
 ※ Secret 連携が不要な場合でも、少なくとも本番では `FIREBASE_AUTH_DISABLED=0` を指定し、Application Default Credentials もしくはサービスアカウントを割り当ててください。
 
@@ -166,6 +171,7 @@ Cloud Build の実行結果から、Cloud Run サービス URL を確認して�
 2. Web アプリからログイン → API にアクセスし、Firebase Auth が機能しているか。
 3. ステージング URL 経由で手動 QA → 問題なければ本番へ昇格。
 4. 本番デプロイ後はキャッシュが残っている場合があるので、必要に応じて CDN やブラウザのキャッシュクリアを案内。
+5. Firebase Console の Authentication →「ログイン方法」で Google プロバイダを「有効」に設定し、Cloud Run のドメインを承認済みドメインへ追加する。次に「プロジェクトの設定」→「アプリを追加」で Web アプリを登録し、取得した `firebaseConfig` を `.env` / Cloud Run の環境変数へ反映する。
 
 ---
 
