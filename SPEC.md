@@ -92,6 +92,86 @@ repo/
 }
 ```
 
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schema/scenario-structure.json",
+  "title": "ScenarioStructure",
+  "type": "object",
+  "required": ["scenario_id", "scenes"],
+  "properties": {
+    "scenario_id": {"type": "string"},
+    "phases": {
+      "type": "array",
+      "items": {"enum": ["hook", "investigation", "confrontation", "aftermath"]}
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["scene_id", "title", "phase", "summary"],
+        "properties": {
+          "scene_id": {"type": "string", "pattern": "^scene_[a-z0-9]{6,}$"},
+          "title": {"type": "string"},
+          "phase": {"type": "string", "enum": ["hook", "investigation", "confrontation", "aftermath"]},
+          "summary": {"type": "string"},
+          "objectives": {"type": "array", "items": {"type": "string"}},
+          "entry_conditions": {"type": "array", "items": {"type": "string"}},
+          "exit_links": {"type": "array", "items": {"type": "string"}},
+          "featured_npcs": {"type": "array", "items": {"type": "string"}},
+          "clues": {"type": "array", "items": {"type": "string"}},
+          "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+          "recommended_checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["skill", "difficulty"],
+              "properties": {
+                "skill": {"type": "string"},
+                "difficulty": {"type": "string", "enum": ["regular", "hard", "extreme"]},
+                "consequences": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "npcs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["npc_id", "name", "faction"],
+        "properties": {
+          "npc_id": {"type": "string", "pattern": "^npc_[a-z0-9]{6,}$"},
+          "name": {"type": "string"},
+          "faction": {"type": "string", "enum": ["ally", "neutral", "antagonist", "unknown"]},
+          "motivation": {"type": "string"},
+          "stats": {"type": "object", "additionalProperties": {"type": "integer"}},
+          "visibility": {"type": "string", "enum": ["public", "secret"]},
+          "linked_scenes": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "clues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clue_id", "description"],
+        "properties": {
+          "clue_id": {"type": "string", "pattern": "^clue_[a-z0-9]{6,}$"},
+          "description": {"type": "string"},
+          "discovery_methods": {"type": "array", "items": {"type": "string"}},
+          "required_checks": {"type": "array", "items": {"type": "string"}},
+          "related_npcs": {"type": "array", "items": {"type": "string"}},
+          "story_impact": {"type": "string"}
+        }
+      }
+    }
+  }
+}
+```
+
 ---
 
 # REST API（バックエンド）
@@ -131,6 +211,26 @@ repo/
 }
 ```
 
+## Scenario Metadata（planned）
+
+* `POST /v1/scenarios/{id}/structure` — シーン/NPC/手掛かりメタデータの初期登録（アップロード完了後にキック）
+* `GET /v1/scenarios/{id}/structure` — 最新メタデータの取得（エージェント/フロント参照）
+* `PATCH /v1/scenarios/{id}/structure` — Keeper向け修正（シーン順、自動抽出結果の補正）
+* `POST /v1/scenarios/{id}/structure/validate` — メタデータ整合性チェック（孤立シーン、未参照NPC等）
+
+---
+
+# シナリオ構造化パイプライン計画
+
+* 入力前処理: シナリオ（MD/PDF/TXT）をPandoc等でMarkdown正規化 → 章/節の見出し階層と箇条書きを抽出。
+* ハイブリッド抽出: ルールベース（見出し・キーワード・判定表記）で候補シーン/NPC/アイテムをリスト化し、LLM補助で要約・タグ付け（phase/objectives/clues）。
+* フェーズ割当: Hook/Investigation/Confrontation/Aftermathのいずれかを自動判定。導入フック（依頼/発端）やクライマックスの脅威記述、余韻パートの後処理を抽出し、失敗時のバックアップルート（フォールバック手掛かり）もマークする。
+* 手掛かり連結: Clueごとに「発見方法」「関連シーン」「必要技能/難易度」を構造化し、複数経路で再取得できるよう `discovery_methods` を保持。
+* NPC/ファクション: NPCの陣営・動機・秘匿情報を抽出。公開/秘匿フラグに応じてKeeperプロンプト配布を制御。
+* 検証ジョブ: `structure/validate` APIでグラフ整合性（孤立ノード、閉路、未終端）とメタ情報の必須フィールドをチェック。失敗時はUIに修正タスク表示。
+* UIワークフロー: アップロード後に構造化結果をカード表示し、Keeperがシーン順序変更、難易度調整、手掛かりラベル追記を行う編集モードを提供。保存時にRAGインデックスとメタデータを同期。
+* 運用: 解析ログ・判定統計をCloud Loggingへ送出し、抽出精度を継続計測。KPI: シーン誤分類率 < 10%、手掛かり欠落率 < 5%。
+
 ---
 
 # データモデル（Firestore; MVP）
@@ -140,6 +240,7 @@ collections:
   characters/{id}
   personalities/{character_id}
   scenarios/{id}  # { gcs_uri, parsed:{ok, chunks}, meta }
+  scenario_structures/{scenario_id}  # { phases, scenes[], npcs[], clues[], validation }
   sessions/{id}
     turns/{turn_no}  # {speaker, utterance, dice, citations, snapshots}
   feedback/{session_id}  # [{dimension, score, comment}]
@@ -172,6 +273,14 @@ collections:
 
 * ループ: `for turn in 1..T: players act -> keeper adjudicate`。
 * 終了: シーン到達/時間/上限T。
+
+## エージェント拡張ガイドライン（次期）
+
+* シーン駆動: シナリオは「導入（Hook）→調査（Investigation）→対決（Confrontation）→余韻（Aftermath）」の層構造を意識し、各ターンで現在シーンの目的・鍵情報・危険度を参照して行動する。
+* 手掛かり経路: 手掛かりは複数経路で取得できる構造を保持し、失敗時フォロー（追加手掛かり・アイデアロール提示）を自動化。
+* NPC指向: NPCには動機/陣営/情報公開レベルを付与し、シーンごとに更新される「スタンス」を保持。Keeperはこのメタ情報を参照してリアクションを一貫化。
+* 判定フロー: 判定要求は「技能名 + 難易度宣言 → DiceTool → 結果描写」を必須化し、失敗時のコンシークエンス分岐を事前に Scene meta に記述。
+* ロールプロンプト: Player/Keeper/Evaluatorそれぞれのプロンプトにシーン情報・手掛かり進捗・危険度を注入し、性格スライダや温度パラメータを制御可能にする。
 
 ---
 
@@ -311,7 +420,50 @@ collections:
 * [x] Staging→Prodプロモート
 * **Done条件**: 本番URLでMVP要件充足
 
+## スプリント6（3–4日）— エージェント本実装
+
+**ゴール**: LLMベースのKP/PLエージェントで実用的なログを生成。
+
+* [ ] Vertex AI / OpenAI等への接続基盤（APIキー管理、リトライ、タイムアウト）
+* [ ] Keeper／Player向けプロンプトテンプレートの整備と性格スライダの反映
+* [ ] 行動に伴うダイス判定（`POST /v1/rolls`）とログへの組み込み
+* [ ] シーン/フェーズ情報を共有するステート管理（現在シーン、未取得手掛かり、危険度）
+* [ ] Keeper/PlayerがScene metaに記述された"objectives" "recommended_checks"を参照して行動・トランジションを決定
+* [ ] セッションループの再設計（行動選択、終了条件、例外処理）とバックアップルート提示（アイデアロール等）
+* **Done条件**: サンプルシナリオでLLM生成のログが10ターン以上継続し、引用と判定が含まれる
+
+## スプリント7（2–3日）— 品質強化とガードレール
+
+**ゴール**: 出力品質と安定性を向上し、E2E動作を保証。
+
+* [ ] 評価メトリクスの精緻化（LLM評価テンプレート、閾値、失敗時再試行）
+* [ ] セッションログ／チャンクの保持方針とクリーンアップジョブ
+* [ ] 失敗検知・通知（構造化ログのアラート、Webhook等）
+* [ ] シナリオメタデータの自動検証（孤立シーン、未使用NPC、未結線手掛かり）をCI/管理画面に組み込み
+* [ ] フロントE2Eテスト（Playwright等）による回帰チェック
+* **Done条件**: ステージングで3シナリオ連続実行し、異常なくフィードバック出力
+
+## スプリント8（3–4日）— シナリオ構造化 & メタデータ整備
+
+**ゴール**: アップロードされたシナリオをシーン単位で整理し、TRPG特有のメタ情報（NPC、手掛かり、アイテム、進行ライン）を保持できるようにする。新クトゥルフTRPGのドメイン知識に基づき、解析結果をAIエージェントが利用できる形にする。
+
+* [ ] ドメイン調査：海外／国内の新クトゥルフTRPGシナリオ構成、Keeper向けガイドライン（例：導入→調査→クライマックス、ハンドアウト、技能判定ポイント、NPCステータス）を整理し、引用元をSPECに追記
+* [ ] メタデータスキーマ設計：`Scene`（目的、トリガー、遷移先）、`NPC`（役割、陣営、ステータス、動機）、`Clue/Item`（取得条件、関連シーン）などを JSON Schema として定義
+* [ ] シナリオ解析パイプライン強化：Markdown/テキストの構造化（見出し→シーン抽出、タグ検出、手掛かりリスト化）。必要に応じて簡易ルールベースとLLM補助のハイブリッド処理を設計し、フェーズ分類（Hook/Investigation/Confrontation/Aftermath）とバックアップルート抽出を実装
+* [ ] Keeper向け編集UI/API：抽出結果の手動修正（シーン順の編集、NPC属性の追記、アイテム管理）、RAGコーパスへの反映フローを用意
+* [ ] `structure/validate` の整合性チェック基準（孤立シーン、未参照NPC、手掛かり未到達時の救済策）を定義し、自動検証ジョブとして実装
+* [ ] エージェント連携：メタデータを `SessionGenerator` / `agents` へ供給し、シーンごとの目標やNPC情報を参照できる形に拡張（未実装ならタスク化）
+* **Done条件**: サンプルシナリオをアップロードすると、Scene/NPC/Clue/Item/StoryLineが自動抽出され、UIで確認・修正・保存できる
+
 ---
+
+# エージェント開発ロードマップ（詳細）
+
+- **フェーズA: MVP安定化** — 既存セッションループのLLM置換に備え、DiceTool/PersonalityTool/ログ構造の整合性テストを整備。
+- **フェーズB: シーン感応プロンプト** — Scene metaを参照するKeeper/Playerプロンプトを策定し、Hook→Investigation→Confrontation→Aftermathの進行やアイデアロール等のフォールバック提示をテンプレート化。
+- **フェーズC: 行動決定エンジン** — 各プレイヤーの性格ベクトルとScene objectivesを元に、行動候補を生成→評価→選択するスコアリング（期待SAN/危険度）を導入。ローリング結果を踏まえた次ターン計画を維持。
+- **フェーズD: 評価フィードバック収束** — EvaluatorがScene metaとログ引用からテンポ/手掛かり回収率/緊張感を分析し、Keeper/Designer向け改善ポイントを提示。異常検知時はシナリオ構造の欠落（孤立シーン）を指摘。
+- **フェーズE: ガードレール** — 禁止行動（ネタバレ、外部知識持ち込み）をプロンプト/ツール実装で制御し、セッション崩壊時のロールバックと再試行を自動化。
 
 # バックログ（優先順）
 
