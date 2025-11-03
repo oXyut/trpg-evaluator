@@ -54,4 +54,7 @@ def log_event(event: str, *, level: int = logging.INFO, **fields: Any) -> None:
     logger = logging.getLogger("trpg_evaluator")
     payload = {"event": event}
     payload.update(fields)
+    request_id = get_request_id()
+    if request_id:
+        payload["request_id"] = request_id
     logger.log(level, event, extra={"structured": payload})
