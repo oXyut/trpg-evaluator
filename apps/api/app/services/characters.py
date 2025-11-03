@@ -61,18 +61,16 @@ class InMemoryCharacterRepository:
 class FileCharacterRepository(InMemoryCharacterRepository):
     def __init__(self, path: Path) -> None:
         super().__init__()
-        self._collection = JSONBackedCollection[
-            CharacterModel
-        ](
+        self._collection = JSONBackedCollection[CharacterModel](
             path,
             serializer=lambda item: item.model_dump(),
             deserializer=lambda data: CharacterModel.model_validate(data),
         )
         for model in self._collection:
-            self._items[model.id] = CharacterRecord(model=model)
+            self._items[model.id] = model
 
     def _persist(self) -> None:
-        snapshot = [record.model for record in self._items.values()]
+        snapshot = list(self._items.values())
         self._collection.replace_items(snapshot)
 
     def save(self, model: CharacterModel) -> CharacterModel:
