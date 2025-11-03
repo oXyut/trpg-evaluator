@@ -142,6 +142,7 @@ gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
    - `_FIREBASE_AUTH_DOMAIN=<firebase authDomain>`
    - `_FIREBASE_PROJECT_ID=<firebase projectId>`
    - `_FIREBASE_APP_ID=<firebase appId>`
+   - `_CORS_ALLOW_ORIGINS=https://trpg-web-stg-<project-number>.asia-northeast1.run.app`
 5. 承認: 自動で構わない（`main` へのマージで即 staging へデプロイ）
 
 ### 本番用トリガー（例）
@@ -158,11 +159,11 @@ gcloud projects add-iam-policy-binding $(gcloud config get-value project) \
 ```bash
 # ステージング
 gcloud builds submit --config infra/gcp/cloudbuild.yaml \
-  --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>
+  --substitutions _ENV=staging,_API_SERVICE=trpg-api-stg,_WEB_SERVICE=trpg-web-stg,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>,_CORS_ALLOW_ORIGINS=https://trpg-web-stg-<project-number>.asia-northeast1.run.app
 
 # 本番（署名付き URL など事前に確認した上で実行）
 gcloud builds submit --config infra/gcp/cloudbuild.yaml \
-  --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>
+  --substitutions _ENV=prod,_API_SERVICE=trpg-api,_WEB_SERVICE=trpg-web,_ARTIFACT_REPO=trpg-evaluator,_FIREBASE_API_KEY=<apiKey>,_FIREBASE_AUTH_DOMAIN=<authDomain>,_FIREBASE_PROJECT_ID=<projectId>,_FIREBASE_APP_ID=<appId>,_CORS_ALLOW_ORIGINS=https://trpg-web-<project-number>.asia-northeast1.run.app
 ```
 
 Cloud Build の実行結果から、Cloud Run サービス URL を確認してください。

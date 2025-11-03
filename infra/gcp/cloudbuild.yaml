@@ -27,6 +27,7 @@ substitutions:
   _FIREBASE_AUTH_DOMAIN: ""
   _FIREBASE_PROJECT_ID: ""
   _FIREBASE_APP_ID: ""
+  _CORS_ALLOW_ORIGINS: ""
 
 steps:
   - id: "Build API image"
@@ -95,7 +96,7 @@ steps:
         "managed",
         "--allow-unauthenticated",
         "--set-env-vars",
-        "API_ENV=${_ENV}",
+        "API_ENV=${_ENV},CORS_ALLOW_ORIGINS=${_CORS_ALLOW_ORIGINS}",
       ]
 
   - id: "Deploy Web to Cloud Run"
