@@ -25,6 +25,7 @@
 * **Storage**: Firestore（PoC）/ Cloud SQL（将来移行）; GCS for uploads; Vertex AI RAG Engine（コーパス）
 * **Deploy**: Cloud Run（FE/BE分離）+ Artifact Registry + Cloud Build, Secret Manager
 * **Auth**: Firebase Auth（メールリンク or Google）
+  * `FIREBASE_AUTH_DISABLED=0` で有効化。`FIREBASE_PROJECT_ID` とサービスアカウント or ADC を用意。
 
 ```mermaid
 flowchart LR

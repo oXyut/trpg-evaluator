@@ -4,7 +4,8 @@ import logging
 import time
 import uuid
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 
 from app.utils.logging import (
     configure_logging,
@@ -12,6 +13,7 @@ from app.utils.logging import (
     reset_request_id,
     set_request_id,
 )
+from app.utils.auth import FirebaseAuthError, FirebaseUser, is_auth_disabled, verify_firebase_token
 
 from app.routers import characters, evaluation, personalities, rolls, scenarios, sessions
 
@@ -64,6 +66,46 @@ async def request_context_middleware(request: Request, call_next):
         raise
     finally:
         reset_request_id(token)
+
+
+def _requires_auth(path: str) -> bool:
+    if is_auth_disabled():
+        return False
+    if path == "/healthz":
+        return False
+    return path.startswith("/v1/")
+
+
+@app.middleware("http")
+async def firebase_auth_middleware(request: Request, call_next):
+    if _requires_auth(request.url.path):
+        header = request.headers.get("authorization")
+        if not header or not header.lower().startswith("bearer "):
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Missing bearer token"},
+            )
+        token = header.split(" ", 1)[1].strip()
+        try:
+            user = verify_firebase_token(token)
+            log_event("auth.token.verified", uid=user.uid, email=user.email)
+        except FirebaseAuthError as exc:
+            log_event("auth.token.invalid", level=logging.WARNING, error=str(exc))
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Invalid Firebase token"},
+            )
+        request.state.user = user
+    else:
+        request.state.user = FirebaseUser(uid="anonymous")
+    return await call_next(request)
+
+
+def get_current_user(request: Request) -> FirebaseUser:
+    user = getattr(request.state, "user", None)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    return user
 
 
 @app.get("/healthz")

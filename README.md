@@ -48,6 +48,12 @@ Visit `http://localhost:3000` to open the dashboard.
 
 Runtime configuration lives in `.env`. See the file for defaults covering API host/port and emulator hints.
 
+- Firebase Auth を有効化する場合は以下の変数を設定してください。
+  - `FIREBASE_AUTH_DISABLED=0`
+  - `FIREBASE_PROJECT_ID=<your-project-id>`
+  - `FIREBASE_CREDENTIALS_PATH=<path-to-service-account.json>`（もしくは Application Default Credentials を使用）
+  - 開発・テスト用途では `FIREBASE_AUTH_DISABLED=1` として認証をバイパス可能です。
+
 ## Testing
 
 - Backend: `uv run --extra dev pytest`
