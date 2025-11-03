@@ -96,6 +96,9 @@ def _requires_auth(path: str) -> bool:
 
 @app.middleware("http")
 async def firebase_auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     if _requires_auth(request.url.path):
         header = request.headers.get("authorization")
         if not header or not header.lower().startswith("bearer "):
